@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Weapon Detection</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',sans-serif;background:#0a0a1a;color:#fff;min-height:100vh}
+        .header{background:linear-gradient(135deg,#1a0a2e,#0a0a1a);padding:15px 30px;border-bottom:2px solid #ff0040;display:flex;justify-content:space-between;align-items:center}
+        .header h1{font-size:20px}
+        .header h1 span{color:#ff0040}
+        .nav-links{display:flex;gap:15px;align-items:center}
+        .nav-links a{color:#aaa;text-decoration:none;font-size:14px;padding:5px 12px;border-radius:5px;transition:.3s}
+        .nav-links a:hover{color:#fff;background:#1a1a2e}
+        .content{padding:20px 30px;max-width:800px;margin:0 auto}
+        .card{background:#16213e;border-radius:15px;padding:25px;margin-bottom:15px}
+        .card h2{color:#ff0040;margin-bottom:10px;font-size:18px}
+        .card p{color:#bbb;font-size:14px;line-height:1.7}
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+        .info-item{background:#1a1a2e;padding:12px;border-radius:8px}
+        .info-label{color:#888;font-size:11px}
+        .info-val{font-size:14px;margin-top:3px}
+        .weapon-tag{display:inline-block;background:rgba(255,0,64,.15);color:#ff0040;padding:4px 10px;border-radius:5px;margin:3px;font-size:12px}
+        .footer{text-align:center;padding:12px;color:#444;font-size:11px;border-top:1px solid #1a1a2e;margin-top:20px}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>ℹ️ <span>About</span></h1>
+    <div class="nav-links">
+        <a href="{% url 'detector:home' %}">🏠 Home</a>
+        <a href="{% url 'detector:history' %}">📜 History</a>
+    </div>
+</div>
+
+<div class="content">
+    <div class="card">
+        <h2>🎯 Weapon Detection System</h2>
+        <p>Real-time weapon detection powered by YOLOv8 deep learning model. Upload images or use your webcam for instant detection with bounding box visualization.</p>
+    </div>
+    
+    <div class="card">
+        <h2>🤖 Model Info</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Engine</div>
+                <div class="info-val">{{ model_info.engine }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Default Model</div>
+                <div class="info-val">{{ model_info.default_model }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Custom Model</div>
+                <div class="info-val">{{ model_info.custom_model }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Status</div>
+                <div class="info-val">{% if model_info.loaded %}✅ Loaded{% else %}❌ Not Loaded{% endif %}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🔫 Detectable Weapons</h2>
+        <p>Default COCO model can detect:</p>
+        <div style="margin-top:8px">
+            {% for w in model_info.weapon_classes %}
+            <span class="weapon-tag">{{ w }}</span>
+            {% endfor %}
+        </div>
+        <p style="margin-top:10px;font-size:12px;color:#888">For pistol/rifle detection, add a custom trained model at <code>models/weapon_best.pt</code></p>
+    </div>
+    
+    <div class="card">
+        <h2>⚡ Features</h2>
+        <p>
+            📁 File Upload - Image choose karke detect karo<br>
+            📹 Live Camera - Real-time webcam detection<br>
+            🔴 Red boxes - Weapons with confidence<br>
+            🟢 Green boxes - Safe objects detected<br>
+            📜 History - Sab past scans ka record<br>
+        </p>
+    </div>
+</div>
+
+<div class="footer">Weapon Detection v2.0 - YOLOv8</div>
+</body>
+</html>

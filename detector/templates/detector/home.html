@@ -1,0 +1,356 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weapon Detection System</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',sans-serif;background:#0a0a1a;color:#fff;min-height:100vh}
+        .header{background:linear-gradient(135deg,#1a0a2e,#0a0a1a);padding:15px 30px;border-bottom:2px solid #ff0040;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+        .header h1{font-size:20px}
+        .header h1 span{color:#ff0040}
+        .nav-links{display:flex;gap:15px;align-items:center}
+        .nav-links a{color:#aaa;text-decoration:none;font-size:14px;padding:5px 12px;border-radius:5px;transition:all .3s}
+        .nav-links a:hover{color:#fff;background:#1a1a2e}
+        .badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:bold}
+        .badge-green{background:rgba(0,255,136,.15);color:#00ff88;border:1px solid #00ff8840}
+        .badge-red{background:rgba(255,0,64,.15);color:#ff0040;border:1px solid #ff004040}
+        
+        .tabs{display:flex;gap:0;padding:15px 30px 0}
+        .tab-btn{padding:12px 30px;border:none;background:#1a1a2e;color:#888;cursor:pointer;font-size:14px;font-weight:bold;transition:all .3s;border-radius:10px 10px 0 0}
+        .tab-btn.active{background:#16213e;color:#fff;border-top:3px solid #ff0040}
+        .tab-btn:hover{color:#fff}
+        
+        .content{padding:20px 30px 30px}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        
+        .upload-box{background:#16213e;border:2px dashed #333;border-radius:15px;padding:40px;text-align:center;cursor:pointer;transition:all .3s}
+        .upload-box:hover,.upload-box.dragover{border-color:#ff0040;background:#1a1a3e}
+        .upload-box img{max-width:300px;max-height:250px;border-radius:10px;margin-top:10px}
+        .upload-icon{font-size:40px;margin-bottom:8px}
+        
+        .btn{padding:12px 35px;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:bold;transition:all .3s}
+        .btn-red{background:#ff0040;color:#fff}
+        .btn-red:hover{background:#cc0033}
+        .btn-green{background:#00ff88;color:#000}
+        .btn-gray{background:#333;color:#888;cursor:not-allowed}
+        
+        .webcam-container{position:relative;max-width:640px;margin:0 auto;background:#000;border-radius:10px;overflow:hidden}
+        .webcam-video{width:100%;display:block;border-radius:10px;transform:scaleX(-1)}
+        .webcam-result{width:100%;display:block;border-radius:10px}
+        .cam-controls{text-align:center;margin-top:12px;display:flex;gap:10px;justify-content:center}
+        
+        .alert-bar{padding:12px;border-radius:8px;margin-top:12px;display:none;font-weight:bold;font-size:15px;text-align:center}
+        .alert-weapon{display:block;background:rgba(255,0,0,.2);border:2px solid #ff0040;color:#ff0040;animation:pulse 1s infinite}
+        .alert-safe{display:block;background:rgba(0,255,136,.1);border:2px solid #00ff88;color:#00ff88}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+        
+        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+        .stat-card{background:#1a1a2e;padding:12px;border-radius:8px;text-align:center}
+        .stat-val{font-size:22px;font-weight:bold}
+        .stat-lbl{font-size:10px;color:#888;margin-top:3px}
+        
+        .result-box{background:#16213e;border-radius:15px;padding:20px;margin-top:15px}
+        .result-img{max-width:100%;border-radius:10px;border:2px solid #333}
+        .det-item{padding:6px 12px;margin:4px 0;border-radius:6px;display:flex;justify-content:space-between;font-size:13px}
+        .det-weapon{background:rgba(255,0,64,.15);border:1px solid #ff004040}
+        .det-safe{background:rgba(0,255,136,.08);border:1px solid #00ff8830}
+        
+        .footer{text-align:center;padding:12px;color:#444;font-size:11px;border-top:1px solid #1a1a2e;margin-top:20px}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>&#127919; <span>Weapon</span> Detection</h1>
+    <div class="nav-links">
+        <span class="badge {% if model_loaded %}badge-green{% else %}badge-red{% endif %}">TF {% if model_loaded %}ON{% else %}OFF{% endif %}</span>
+        <a href="{% url 'detector:history' %}">&#128220; History</a>
+        <a href="{% url 'detector:about' %}">&#8505;&#65039; About</a>
+    </div>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" id="tab-btn-upload" onclick="switchTab('upload')">&#128193; File Upload</button>
+    <button class="tab-btn" id="tab-btn-webcam" onclick="switchTab('webcam')">&#128249; Live Camera</button>
+</div>
+
+<div class="content">
+
+    <!-- ===== FILE UPLOAD TAB ===== -->
+    <div id="tab-upload" class="tab-content active">
+        <div class="upload-box" id="upload-box" onclick="document.getElementById('file-input').click()">
+            <div class="upload-icon">&#128247;</div>
+            <p style="font-size:16px;margin-bottom:4px">Click ya Drag Image</p>
+            <p style="color:#888;font-size:12px">JPG, PNG, WebP</p>
+            <img id="preview-img" style="display:none" alt="Preview">
+        </div>
+        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewFile(this)">
+
+        <div style="text-align:center;margin-top:15px">
+            <button class="btn btn-red" id="detect-btn" onclick="detectFile()" disabled>&#128293; Detect Weapon</button>
+        </div>
+
+        <div id="file-result" style="display:none;margin-top:15px">
+            <div class="result-box">
+                <h3 id="file-result-title">Result</h3>
+                <img id="file-result-img" class="result-img" alt="Result">
+                <div id="file-detections" class="det-list" style="margin-top:10px"></div>
+                <div id="file-stats" class="stats" style="margin-top:10px"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== LIVE CAMERA TAB ===== -->
+    <div id="tab-webcam" class="tab-content">
+        <div class="webcam-container" id="cam-box">
+            <video id="webcam" class="webcam-video" autoplay playsinline style="display:none"></video>
+            <img id="cam-result" class="webcam-result" style="display:none" alt="Detection">
+            <div id="cam-placeholder" style="text-align:center;padding:80px 20px;color:#555">
+                <div style="font-size:50px;margin-bottom:10px">&#128249;</div>
+                <p>Start Camera for Live Detection</p>
+            </div>
+        </div>
+        <div class="cam-controls">
+            <button class="btn btn-green" id="start-cam" onclick="startWebcam()">&#9654; Start Camera</button>
+            <button class="btn btn-red" id="stop-cam" onclick="stopWebcam()" disabled>&#9632; Stop</button>
+        </div>
+        <div class="alert-bar" id="cam-alert"></div>
+        <div class="stats" id="cam-stats" style="display:none">
+            <div class="stat-card"><div class="stat-val" id="s-sts" style="color:#00ff88">SAFE</div><div class="stat-lbl">Status</div></div>
+            <div class="stat-card"><div class="stat-val" id="s-conf" style="color:#00ff88">0%</div><div class="stat-lbl">Confidence</div></div>
+            <div class="stat-card"><div class="stat-val" id="s-fps" style="color:#888">0</div><div class="stat-lbl">FPS</div></div>
+            <div class="stat-card"><div class="stat-val" id="s-mdl" style="color:#888;font-size:11px">TF+YOLO</div><div class="stat-lbl">Model</div></div>
+        </div>
+    </div>
+
+</div>
+
+<div class="footer">Weapon Detection v2.0 - TensorFlow + YOLOv8</div>
+
+<script>
+let selectedFile = null;
+
+// ===== TABS =====
+function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('tab-btn-' + tab).classList.add('active');
+    if (tab !== 'webcam') stopWebcam();
+}
+
+// ===== FILE UPLOAD =====
+function previewFile(input) {
+    if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('preview-img').src = e.target.result;
+            document.getElementById('preview-img').style.display = 'block';
+            document.getElementById('detect-btn').disabled = false;
+            document.getElementById('detect-btn').className = 'btn btn-red';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Drag drop
+const ubox = document.getElementById('upload-box');
+ubox.addEventListener('dragover', e => { e.preventDefault(); ubox.classList.add('dragover'); });
+ubox.addEventListener('dragleave', () => ubox.classList.remove('dragover'));
+ubox.addEventListener('drop', e => {
+    e.preventDefault(); ubox.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) {
+        selectedFile = f;
+        document.getElementById('file-input').files = e.dataTransfer.files;
+        previewFile(document.getElementById('file-input'));
+    }
+});
+
+// Detect via AJAX
+async function detectFile() {
+    if (!selectedFile) return;
+    
+    const btn = document.getElementById('detect-btn');
+    btn.textContent = 'Detecting...';
+    btn.disabled = true;
+    
+    const fd = new FormData();
+    fd.append('image', selectedFile);
+    fd.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+    
+    try {
+        const res = await fetch('/api/detect/', { method: 'POST', body: fd });
+        const data = await res.json();
+        showFileResult(data);
+    } catch(e) {
+        alert('Detection failed: ' + e.message);
+    }
+    
+    btn.textContent = 'Detect Weapon';
+    btn.disabled = false;
+}
+
+function showFileResult(data) {
+    const box = document.getElementById('file-result');
+    box.style.display = 'block';
+    
+    const title = document.getElementById('file-result-title');
+    if (data.is_weapon) {
+        title.innerHTML = '<span style="color:#ff0040">WEAPON DETECTED!</span>';
+    } else {
+        title.innerHTML = '<span style="color:#00ff88">No Weapon - Safe</span>';
+    }
+    
+    if (data.annotated_image) {
+        document.getElementById('file-result-img').src = 'data:image/jpeg;base64,' + data.annotated_image;
+        document.getElementById('file-result-img').style.display = 'block';
+    }
+    
+    const detDiv = document.getElementById('file-detections');
+    detDiv.innerHTML = '';
+    if (data.all_detections) {
+        for (const d of data.all_detections) {
+            const cls = d.is_weapon ? 'det-weapon' : 'det-safe';
+            const tag = d.is_weapon ? 'WEAPON' : 'SAFE';
+            detDiv.innerHTML += '<div class="det-item ' + cls + '"><span>' + tag + ' ' + d.class + '</span><span>' + d.confidence + '%</span></div>';
+        }
+    }
+    
+    const statsDiv = document.getElementById('file-stats');
+    statsDiv.innerHTML = '<div class="stat-card"><div class="stat-val">' + (data.all_detections ? data.all_detections.length : 0) + '</div><div class="stat-lbl">Objects</div></div>' +
+        '<div class="stat-card"><div class="stat-val" style="color:#ff0040">' + (data.weapon_detections ? data.weapon_detections.length : 0) + '</div><div class="stat-lbl">Weapons</div></div>' +
+        '<div class="stat-card"><div class="stat-val" style="color:#00ff88">' + (data.confidence || 0) + '%</div><div class="stat-lbl">Confidence</div></div>' +
+        '<div class="stat-card"><div class="stat-val" style="color:#888;font-size:12px">' + (data.model_used || 'TF+YOLO') + '</div><div class="stat-lbl">Model</div></div>';
+}
+
+// ===== WEBCAM - FAST with annotated frame =====
+let webcamStream = null;
+let detecting = false;
+let fpsCount = 0;
+let lastFpsTime = Date.now();
+
+async function startWebcam() {
+    try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480, facingMode: 'environment' }
+        });
+        const video = document.getElementById('webcam');
+        video.srcObject = webcamStream;
+        video.style.display = 'block';
+        document.getElementById('cam-placeholder').style.display = 'none';
+        document.getElementById('start-cam').disabled = true;
+        document.getElementById('stop-cam').disabled = false;
+        document.getElementById('cam-stats').style.display = 'grid';
+        detecting = true;
+        
+        // Wait for video to be ready
+        video.onloadeddata = function() {
+            detectLoop();
+        };
+    } catch(e) {
+        alert('Camera error! Allow camera permission.');
+    }
+}
+
+function stopWebcam() {
+    detecting = false;
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+    }
+    document.getElementById('webcam').srcObject = null;
+    document.getElementById('webcam').style.display = 'none';
+    document.getElementById('cam-result').style.display = 'none';
+    document.getElementById('cam-placeholder').style.display = 'block';
+    document.getElementById('start-cam').disabled = false;
+    document.getElementById('stop-cam').disabled = true;
+    document.getElementById('cam-alert').className = 'alert-bar';
+    document.getElementById('cam-stats').style.display = 'none';
+}
+
+async function detectLoop() {
+    if (!detecting) return;
+    const video = document.getElementById('webcam');
+    
+    if (video.readyState >= 2) {
+        // Capture frame from video
+        const tmp = document.createElement('canvas');
+        tmp.width = video.videoWidth;
+        tmp.height = video.videoHeight;
+        tmp.getContext('2d').drawImage(video, 0, 0);
+        const b64 = tmp.toDataURL('image/jpeg', 0.7);
+        
+        try {
+            const res = await fetch('/api/detect/frame/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ image: b64 })
+            });
+            const data = await res.json();
+            
+            // Show annotated frame with RED BOX directly!
+            if (data.annotated_frame) {
+                const camResult = document.getElementById('cam-result');
+                camResult.src = 'data:image/jpeg;base64,' + data.annotated_frame;
+                camResult.style.display = 'block';
+                video.style.display = 'none'; // Hide raw video, show annotated
+            }
+            
+            // Alert bar
+            const al = document.getElementById('cam-alert');
+            if (data.weapon_detected) {
+                al.className = 'alert-bar alert-weapon';
+                al.textContent = 'ALERT! WEAPON DETECTED! Confidence: ' + (data.confidence || 0) + '%';
+            } else {
+                al.className = 'alert-bar alert-safe';
+                al.textContent = 'Safe - No Weapons';
+            }
+            
+            // Stats
+            const sSts = document.getElementById('s-sts');
+            const sConf = document.getElementById('s-conf');
+            if (data.weapon_detected) {
+                sSts.textContent = 'WEAPON';
+                sSts.style.color = '#ff0040';
+                sConf.textContent = (data.confidence || 0) + '%';
+                sConf.style.color = '#ff0040';
+            } else {
+                sSts.textContent = 'SAFE';
+                sSts.style.color = '#00ff88';
+                sConf.textContent = (data.tf_confidence || 0).toFixed(0) + '%';
+                sConf.style.color = '#00ff88';
+            }
+            
+            fpsCount++;
+            const now = Date.now();
+            if (now - lastFpsTime >= 1000) {
+                document.getElementById('s-fps').textContent = fpsCount;
+                fpsCount = 0;
+                lastFpsTime = now;
+            }
+        } catch(e) { console.log('Err:', e); }
+    }
+    
+    // 200ms delay = ~5 FPS (fast for TF model)
+    setTimeout(detectLoop, 200);
+}
+
+function getCookie(name) {
+    let v = null;
+    if (document.cookie) {
+        for (let c of document.cookie.split(';')) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) { v = decodeURIComponent(c.substring(name.length + 1)); break; }
+        }
+    }
+    return v;
+}
+</script>
+</body>
+</html>

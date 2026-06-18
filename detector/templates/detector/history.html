@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection History</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',sans-serif;background:#0a0a1a;color:#fff;min-height:100vh}
+        .header{background:linear-gradient(135deg,#1a0a2e,#0a0a1a);padding:15px 30px;border-bottom:2px solid #ff0040;display:flex;justify-content:space-between;align-items:center}
+        .header h1{font-size:20px}
+        .header h1 span{color:#ff0040}
+        .nav-links{display:flex;gap:15px;align-items:center}
+        .nav-links a{color:#aaa;text-decoration:none;font-size:14px;padding:5px 12px;border-radius:5px;transition:.3s}
+        .nav-links a:hover{color:#fff;background:#1a1a2e}
+        .content{padding:20px 30px}
+        .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+        .stat-card{background:#16213e;padding:20px;border-radius:10px;text-align:center}
+        .stat-val{font-size:28px;font-weight:bold}
+        .stat-lbl{font-size:12px;color:#888;margin-top:5px}
+        table{width:100%;border-collapse:collapse;background:#16213e;border-radius:10px;overflow:hidden}
+        th{background:#1a1a2e;padding:12px;text-align:left;font-size:13px;color:#888}
+        td{padding:10px 12px;border-top:1px solid #1a1a2e;font-size:13px}
+        tr:hover{background:#1a1a3e}
+        .tag-weapon{background:rgba(255,0,64,.15);color:#ff0040;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:bold}
+        .tag-safe{background:rgba(0,255,136,.1);color:#00ff88;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:bold}
+        .empty{text-align:center;padding:40px;color:#555;font-size:16px}
+        .footer{text-align:center;padding:12px;color:#444;font-size:11px;border-top:1px solid #1a1a2e;margin-top:20px}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📜 Detection <span>History</span></h1>
+    <div class="nav-links">
+        <a href="{% url 'detector:home' %}">🏠 Home</a>
+        <a href="{% url 'detector:about' %}">ℹ️ About</a>
+    </div>
+</div>
+
+<div class="content">
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-val" style="color:#fff">{{ total }}</div>
+            <div class="stat-lbl">Total Scans</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" style="color:#ff0040">{{ weapon_count }}</div>
+            <div class="stat-lbl">Weapons Found</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" style="color:#00ff88">{{ safe_count }}</div>
+            <div class="stat-lbl">Safe Images</div>
+        </div>
+    </div>
+
+    {% if detections %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Image</th>
+                <th>Result</th>
+                <th>Confidence</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in detections %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ d.image }}</td>
+                <td>
+                    {% if d.is_weapon %}
+                    <span class="tag-weapon">🔴 WEAPON</span>
+                    {% else %}
+                    <span class="tag-safe">🟢 SAFE</span>
+                    {% endif %}
+                </td>
+                <td>{{ d.confidence }}%</td>
+                <td>{{ d.timestamp|date:"M d, H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No detections yet. Upload an image or start the camera! 📸</div>
+    {% endif %}
+</div>
+
+<div class="footer">Weapon Detection v2.0 - YOLOv8</div>
+</body>
+</html>

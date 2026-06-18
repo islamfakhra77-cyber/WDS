@@ -1,0 +1,67 @@
+{% extends 'detector/base.html' %}
+
+{% block title %}Detection Result{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        {% if result.error %}
+        <div class="alert alert-danger">
+            Error: {{ result.error }}
+        </div>
+        {% else %}
+        <div class="card shadow-lg border-0 {% if result.is_weapon %}weapon-detected{% else %}safe-result{% endif %}">
+            <div class="card-header text-white py-4 text-center {% if result.is_weapon %}bg-danger{% else %}bg-success{% endif %}">
+                {% if result.is_weapon %}
+                    <i class="bi bi-exclamation-triangle-fill display-1 mb-2"></i>
+                    <h2 class="fw-bold mb-0">WEAPON DETECTED!</h2>
+                {% else %}
+                    <i class="bi bi-check-circle-fill display-1 mb-2"></i>
+                    <h2 class="fw-bold mb-0">NO WEAPON DETECTED</h2>
+                {% endif %}
+            </div>
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <img src="{{ image_url }}" alt="Scanned Image" class="img-fluid rounded border shadow" style="max-height: 400px;">
+                </div>
+
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light p-3 h-100">
+                            <h6 class="text-muted">Prediction</h6>
+                            <h4 class="{% if result.is_weapon %}text-danger{% else %}text-success{% endif %}">
+                                {{ result.predicted_label }}
+                            </h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light p-3 h-100">
+                            <h6 class="text-muted">Confidence</h6>
+                            <h4>{{ result.confidence }}%</h4>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar {% if result.is_weapon %}bg-danger{% else %}bg-success{% endif %}" style="width: {{ result.confidence }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light p-3 h-100">
+                            <h6 class="text-muted">Weapon Probability</h6>
+                            <h4>{{ result.weapon_probability }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                    <a href="{% url 'detector:home' %}" class="btn btn-primary btn-lg">
+                        Scan Another Image
+                    </a>
+                    <a href="{% url 'detector:history' %}" class="btn btn-outline-secondary btn-lg">
+                        View History
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
